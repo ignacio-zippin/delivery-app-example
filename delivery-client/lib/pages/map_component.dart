@@ -9,6 +9,7 @@ import 'package:flutter_yama_plugins/pages/permission_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:s_sockets/s_sockets.dart';
 // import 'package:flutter_yama_plugins/pages/maps/permission_manager.dart';
 
 // ignore: must_be_immutable
@@ -50,10 +51,11 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
     accuracy: LocationAccuracy.high,
     distanceFilter: 0,
   );
-  LatLng currentPosition = kDefaultInitPoint;
+  LatLng currentPosition = kOther;
   LatLng redPosition = kOther;
   double totalDistance = 0;
   bool isNear = false;
+  bool hasPackage = false;
 
   @override
   void initState() {
@@ -77,7 +79,8 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
 
   initTracking() {
     widget.onTrackingStart?.call();
-    getLocationStream();
+    debugPrint("Comenzó tracking");
+    // getLocationStream();
   }
 
   @override
@@ -88,7 +91,8 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
           FlutterMap(
             mapController: mapController,
             options: MapOptions(
-              initialCenter: _getCenterPoint(widget.packagePosition, currentPosition),
+              initialCenter:
+                  _getCenterPoint(widget.packagePosition, currentPosition),
               initialZoom: 16.4,
               interactionOptions: const InteractionOptions(
                 enableScrollWheel: false,
@@ -143,12 +147,12 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                           color: Colors.black,
                         ),
                         borderRadius: BorderRadiusDirectional.circular(1000),
-                        color: Colors.yellow,
+                        color: Colors.red,
                       ),
                     ),
                   ),
                   Marker(
-                    point: redPosition,
+                    point: kUser,
                     width: 20,
                     height: 20,
                     child: Container(
@@ -157,7 +161,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                           color: Colors.black,
                         ),
                         borderRadius: BorderRadiusDirectional.circular(1000),
-                        color: Colors.red,
+                        color: Colors.yellow,
                       ),
                     ),
                   ),
@@ -217,7 +221,8 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
       String lat = NumberFormat("###.000000").format(location.latitude);
       String long = NumberFormat("###.000000").format(location.longitude);
       currentPosition = LatLng(double.parse(lat), double.parse(long));
-      widget.initialCenter = _getCenterPoint(widget.packagePosition, currentPosition);
+      widget.initialCenter =
+          _getCenterPoint(widget.packagePosition, currentPosition);
       getPosition();
     }
     setState(() {
@@ -241,7 +246,14 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                     _getCenterPoint(widget.packagePosition, currentPosition);
               },
             );
+            // Preguntas del usuario
+            _hasPackage();
+            _distance();
             //TODO: LLamada a Socket
+            SSockets().emit(
+              'updateLocationDelivery',
+              '{"lat": ${currentPosition.latitude}, "lng": ${currentPosition.longitude}}',
+            );
           }
         },
         onError: (e) {
@@ -254,7 +266,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   getLocationStream() {
     //! Simulacion de tracking
     Timer.periodic(const Duration(milliseconds: 2), (timer) {
-      _simulation(timer); //TODO: LLamada a Socket
+      _simulation(timer);
       _hasPackage();
       _distance();
     });
@@ -262,9 +274,12 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   }
 
   _hasPackage() {
-    double redLat = double.parse(redPosition.latitude.toStringAsFixed(6));
+    double redLat = double.parse(currentPosition.latitude.toStringAsFixed(6));
     if (widget.packagePosition != null &&
-        redLat == widget.packagePosition!.latitude) {
+        redLat <= widget.packagePosition!.latitude &&
+        !hasPackage) {
+      hasPackage = true;
+      debugPrint("Tracking tiene el pedido");
       widget.onTrackingGetPackage?.call();
     }
   }
@@ -272,15 +287,18 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   // CALCULAR DISTANCIA
   _distance() {
     totalDistance = calculateDistance(
-      redPosition.latitude,
-      redPosition.longitude,
+      // redPosition.latitude,
+      // redPosition.longitude,
       currentPosition.latitude,
       currentPosition.longitude,
+      kUser.latitude,
+      kUser.longitude,
     );
     if (totalDistance <= widget.nearDistanceInKm && !isNear) {
       isNear = true;
-      debugPrint("${totalDistance.toString()} Km.");
       widget.onTrackingNear?.call();
+      debugPrint("${totalDistance.toString()} Km.");
+      debugPrint("Tracking esta cerca");
     }
   }
 
@@ -337,6 +355,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
         _addLongitude();
       } else {
         widget.onTrackingArrive?.call();
+        debugPrint("Tracking llegó");
         timer.cancel();
       }
     }
