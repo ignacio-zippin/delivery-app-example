@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_yama_plugins/pages/example_k_values.dart';
@@ -56,7 +57,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
     accuracy: LocationAccuracy.high,
     distanceFilter: 0,
   );
-  LatLng currentPosition = kDefaultInitPoint;
+  LatLng myCurrentPosition = kDefaultInitPoint;
   LatLng redPosition = kOther;
   LatLng siltiumPosition = kSiltium;
   double totalDistance = 0;
@@ -99,7 +100,8 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
           FlutterMap(
             mapController: mapController,
             options: MapOptions(
-              initialCenter: _getCenterPoint(siltiumPosition, currentPosition),
+              initialCenter:
+                  _getCenterPoint(siltiumPosition, myCurrentPosition),
               initialZoom: 16.4,
               interactionOptions: const InteractionOptions(
                 enableScrollWheel: false,
@@ -111,7 +113,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                 debugPrint("Tap on Map");
               },
               onPositionChanged: (MapPosition map, bool b) {
-                widget.getPosition ?? (currentPosition);
+                widget.getPosition ?? (myCurrentPosition);
               },
             ),
             children: [
@@ -147,7 +149,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                       ),
                     ),
                     Marker(
-                      point: currentPosition,
+                      point: myCurrentPosition,
                       width: 30,
                       height: 30,
                       child: Container(
@@ -194,7 +196,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                     onPressed: () async {
                       await getCurrentLocationButtonMap();
                       mapController.move(
-                        currentPosition,
+                        myCurrentPosition,
                         16.4,
                       );
                     },
@@ -230,8 +232,9 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
     if (location != null) {
       String lat = NumberFormat("###.000000").format(location.latitude);
       String long = NumberFormat("###.000000").format(location.longitude);
-      currentPosition = LatLng(double.parse(lat), double.parse(long));
-      widget.initialCenter = _getCenterPoint(siltiumPosition, currentPosition);
+      myCurrentPosition = LatLng(double.parse(lat), double.parse(long));
+      widget.initialCenter =
+          _getCenterPoint(siltiumPosition, myCurrentPosition);
       // getPosition();
     }
     setState(() {
@@ -276,8 +279,9 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
 
     SSockets().on('updateLocationUser', (data) {
       Map<String, dynamic> latLng = jsonDecode(data);
-
-      _locationStreamController.add(LatLng(latLng["lat"], latLng["lng"]));
+      LatLng deliveryCurrentPosition = LatLng(latLng["lat"], latLng["lng"]);
+      _locationStreamController.add(deliveryCurrentPosition);
+      _distance(deliveryCurrentPosition);
     });
 
     return _locationStreamController.stream;
@@ -291,37 +295,37 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   // }
 
   // CALCULAR DISTANCIA
-  // _distance() {
-  //   totalDistance = calculateDistance(
-  //     redPosition.latitude,
-  //     redPosition.longitude,
-  //     currentPosition.latitude,
-  //     currentPosition.longitude,
-  //   );
-  //   if (totalDistance <= widget.nearDistanceInKm && !isNear) {
-  //     isNear = true;
-  //     debugPrint("${totalDistance.toString()} Km.");
-  //     widget.onTrackingNear?.call();
-  //   }
-  //   // debugPrint("${totalDistance.toString()} Km.");
-  // }
+  _distance(LatLng deliveryCurrentPosition) {
+    totalDistance = calculateDistance(
+      deliveryCurrentPosition.latitude,
+      deliveryCurrentPosition.longitude,
+      myCurrentPosition.latitude,
+      myCurrentPosition.longitude,
+    );
+    if (totalDistance <= widget.nearDistanceInKm && !isNear) {
+      isNear = true;
+      debugPrint("${totalDistance.toString()} Km.");
+      widget.onTrackingNear?.call();
+    }
+    // debugPrint("${totalDistance.toString()} Km.");
+  }
 
-  // double calculateDistance(lat1, lon1, lat2, lon2) {
-  //   //* Se obtiene la constante de conversion de grados a radianes
-  //   //* 1 degree (deg) = 0.017453292519943295 radians (rad)
-  //   // var rad = 0.017453292519943295;
-  //   //* OR rad = deg * (π/180)
-  //   double rad = pi / 180;
+  double calculateDistance(lat1, lon1, lat2, lon2) {
+    //* Se obtiene la constante de conversion de grados a radianes
+    //* 1 degree (deg) = 0.017453292519943295 radians (rad)
+    // var rad = 0.017453292519943295;
+    //* OR rad = deg * (π/180)
+    double rad = pi / 180;
 
-  //   //* Con el valor anterior, se convierte LatLng (en decimal) a Radianes y se obtiene la distancia entre dos puntos
-  //   double a = 0.5 -
-  //       cos((lat2 - lat1) * rad) / 2 +
-  //       cos(lat1 * rad) * cos(lat2 * rad) * (1 - cos((lon2 - lon1) * rad)) / 2;
+    //* Con el valor anterior, se convierte LatLng (en decimal) a Radianes y se obtiene la distancia entre dos puntos
+    double a = 0.5 -
+        cos((lat2 - lat1) * rad) / 2 +
+        cos(lat1 * rad) * cos(lat2 * rad) * (1 - cos((lon2 - lon1) * rad)) / 2;
 
-  //   // Resultado segun la curvatura de la Tierra
-  //   return 12742 * asin(sqrt(a));
-  //   // 2 * (6371) -> Radius of the earth in km * 2 = 12742, asin = arc sin(arco seno) & sqrt = raiz cuadrada
-  // }
+    // Resultado segun la curvatura de la Tierra
+    return 12742 * asin(sqrt(a));
+    // 2 * (6371) -> Radius of the earth in km * 2 = 12742, asin = arc sin(arco seno) & sqrt = raiz cuadrada
+  }
 
   // SIMULACION TRACKING
   // _simulation(Timer timer) {

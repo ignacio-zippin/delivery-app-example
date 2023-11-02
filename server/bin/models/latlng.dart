@@ -1,13 +1,17 @@
 import 'dart:convert';
 
 class Latlng {
-  final double? lat;
-  final double? lng;
+  double? lat;
+  double? lng;
 
   Latlng({
     this.lat,
     this.lng,
   });
+
+  setLatitude(double lat) {
+    this.lat = lat;
+  }
 
   Map<String, dynamic> toMap() {
     return {
