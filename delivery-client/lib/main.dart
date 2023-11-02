@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_yama_plugins/pages/example_home_page.dart';
+import 'package:s_sockets/s_sockets.dart';
 
 void main() {
+  SSockets().init('http://localhost:3000');
   runApp(const MyApp());
 }
 

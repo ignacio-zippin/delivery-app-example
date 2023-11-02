@@ -5,9 +5,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_yama_plugins/pages/example_k_values.dart';
 import 'package:flutter_yama_plugins/pages/loading_component.dart';
 import 'package:flutter_yama_plugins/pages/location_manager.dart';
+import 'package:flutter_yama_plugins/pages/permission_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:s_sockets/s_sockets.dart';
 // import 'package:flutter_yama_plugins/pages/maps/permission_manager.dart';
 
 // ignore: must_be_immutable
@@ -15,10 +17,7 @@ class TrackingMapComponent extends StatefulWidget {
   final Function(LatLng? currentPosition)? getPosition; // Para repartidor
   final bool isLoading;
   LatLng? initialCenter;
-  LatLng? trackingCurrentPosition;
   LatLng? packagePosition;
-  bool isGoing;
-  bool hasPackage;
   double nearDistanceInKm;
   Widget? myPosition;
   Function()? onTrackingStart;
@@ -30,10 +29,7 @@ class TrackingMapComponent extends StatefulWidget {
     this.getPosition,
     this.isLoading = false,
     this.initialCenter,
-    this.trackingCurrentPosition,
     this.packagePosition,
-    this.isGoing = false,
-    this.hasPackage = false,
     this.nearDistanceInKm = 0.1,
     this.myPosition,
     this.onTrackingStart,
@@ -55,18 +51,16 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
     accuracy: LocationAccuracy.high,
     distanceFilter: 0,
   );
-  LatLng currentPosition = kDefaultInitPoint;
+  LatLng currentPosition = kOther;
   LatLng redPosition = kOther;
-  LatLng siltiumPosition = kSiltium;
   double totalDistance = 0;
   bool isNear = false;
+  bool hasPackage = false;
 
   @override
   void initState() {
     loadingPosition = widget.isLoading;
     mapController = MapController();
-    redPosition = kOther;
-    siltiumPosition = kSiltium;
     initTracking();
     super.initState();
   }
@@ -85,7 +79,8 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
 
   initTracking() {
     widget.onTrackingStart?.call();
-    getLocationStream();
+    debugPrint("Comenzó tracking");
+    // getLocationStream();
   }
 
   @override
@@ -96,7 +91,8 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
           FlutterMap(
             mapController: mapController,
             options: MapOptions(
-              initialCenter: _getCenterPoint(siltiumPosition, currentPosition),
+              initialCenter:
+                  _getCenterPoint(widget.packagePosition, currentPosition),
               initialZoom: 16.4,
               interactionOptions: const InteractionOptions(
                 enableScrollWheel: false,
@@ -133,7 +129,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
               MarkerLayer(
                 markers: [
                   Marker(
-                    point: siltiumPosition,
+                    point: widget.packagePosition ?? kDefault,
                     width: 30,
                     height: 30,
                     child: ClipRRect(
@@ -151,12 +147,12 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                           color: Colors.black,
                         ),
                         borderRadius: BorderRadiusDirectional.circular(1000),
-                        color: Colors.yellow,
+                        color: Colors.red,
                       ),
                     ),
                   ),
                   Marker(
-                    point: redPosition,
+                    point: kUser,
                     width: 20,
                     height: 20,
                     child: Container(
@@ -165,7 +161,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
                           color: Colors.black,
                         ),
                         borderRadius: BorderRadiusDirectional.circular(1000),
-                        color: Colors.red,
+                        color: Colors.yellow,
                       ),
                     ),
                   ),
@@ -225,8 +221,9 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
       String lat = NumberFormat("###.000000").format(location.latitude);
       String long = NumberFormat("###.000000").format(location.longitude);
       currentPosition = LatLng(double.parse(lat), double.parse(long));
-      widget.initialCenter = _getCenterPoint(siltiumPosition, currentPosition);
-      // getPosition();
+      widget.initialCenter =
+          _getCenterPoint(widget.packagePosition, currentPosition);
+      getPosition();
     }
     setState(() {
       loadingPosition = false;
@@ -234,30 +231,37 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   }
 
   //* Para repartidor: stream/suscripcion a los cambios de posicion
-  // void getPosition() async {
-  //   bool response = await PermissionManager().getLocationServiceStatus();
-  //   if (response) {
-  //     positionStream =
-  //         Geolocator.getPositionStream(locationSettings: locationSettings)
-  //             .listen(
-  //       (Position? position) {
-  //         if (position != null) {
-  //           setState(
-  //             () {
-  //               widget.currentPosition =
-  //                   LatLng(position.latitude, position.longitude);
-  //               widget.initialCenter =
-  //                   _getCenterPoint(siltiumPosition, widget.currentPosition);
-  //             },
-  //           );
-  //         }
-  //       },
-  //       onError: (e) {
-  //         positionStream?.cancel();
-  //       },
-  //     );
-  //   }
-  // }
+  void getPosition() async {
+    bool response = await PermissionManager().getLocationServiceStatus();
+    if (response) {
+      positionStream =
+          Geolocator.getPositionStream(locationSettings: locationSettings)
+              .listen(
+        (Position? position) {
+          if (position != null) {
+            setState(
+              () {
+                currentPosition = LatLng(position.latitude, position.longitude);
+                widget.initialCenter =
+                    _getCenterPoint(widget.packagePosition, currentPosition);
+              },
+            );
+            // Preguntas del usuario
+            _hasPackage();
+            _distance();
+            //TODO: LLamada a Socket
+            SSockets().emit(
+              'updateLocationDelivery',
+              '{"lat": ${currentPosition.latitude}, "lng": ${currentPosition.longitude}}',
+            );
+          }
+        },
+        onError: (e) {
+          positionStream?.cancel();
+        },
+      );
+    }
+  }
 
   getLocationStream() {
     //! Simulacion de tracking
@@ -270,8 +274,12 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   }
 
   _hasPackage() {
-    double redLat = double.parse(redPosition.latitude.toStringAsFixed(6));
-    if (redLat == kSiltium.latitude) {
+    double redLat = double.parse(currentPosition.latitude.toStringAsFixed(6));
+    if (widget.packagePosition != null &&
+        redLat <= widget.packagePosition!.latitude &&
+        !hasPackage) {
+      hasPackage = true;
+      debugPrint("Tracking tiene el pedido");
       widget.onTrackingGetPackage?.call();
     }
   }
@@ -279,17 +287,19 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   // CALCULAR DISTANCIA
   _distance() {
     totalDistance = calculateDistance(
-      redPosition.latitude,
-      redPosition.longitude,
+      // redPosition.latitude,
+      // redPosition.longitude,
       currentPosition.latitude,
       currentPosition.longitude,
+      kUser.latitude,
+      kUser.longitude,
     );
     if (totalDistance <= widget.nearDistanceInKm && !isNear) {
       isNear = true;
-      debugPrint("${totalDistance.toString()} Km.");
       widget.onTrackingNear?.call();
+      debugPrint("${totalDistance.toString()} Km.");
+      debugPrint("Tracking esta cerca");
     }
-    // debugPrint("${totalDistance.toString()} Km.");
   }
 
   double calculateDistance(lat1, lon1, lat2, lon2) {
@@ -345,6 +355,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
         _addLongitude();
       } else {
         widget.onTrackingArrive?.call();
+        debugPrint("Tracking llegó");
         timer.cancel();
       }
     }

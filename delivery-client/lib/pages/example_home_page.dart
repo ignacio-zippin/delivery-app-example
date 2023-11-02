@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_yama_plugins/pages/map_component.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
 import 'example_k_values.dart';
 
 class ExampleHomePage extends StatefulWidget {
@@ -71,10 +70,8 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
                 Expanded(
                   child: TrackingMapComponent(
                     initialCenter: kDefaultInitPoint,
-                    // currentPosition: kDefaultInitPoint,
+                    packagePosition: kSiltium,
                     nearDistanceInKm: 0.1,
-                    // trackingCurrentPosition: ,
-                    // packagePosition: ,
                     onTrackingStart: _onTrackingStart,
                     onTrackingGetPackage: _onTrackingGetPackage,
                     onTrackingNear: _onTrackingNear,
@@ -91,9 +88,6 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
 
   _onTrackingStart() {
     Fluttertoast.showToast(msg: "El repartidor ya está en camino!");
-    // setState(() {
-    //   buttonText = "Comenzó el Tracking";
-    // });
   }
 
   _onTrackingGetPackage() {

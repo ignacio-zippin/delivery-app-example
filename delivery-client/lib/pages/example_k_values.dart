@@ -7,6 +7,7 @@ LatLng kDefault = const LatLng(-24.789239, -65.410283);
 LatLng kDefaultInitPoint = const LatLng(-24.787569, -65.408084);
 LatLng kSiltium = const LatLng(-24.784349, -65.407748);
 LatLng kOther = const LatLng(-24.781477, -65.407442);
+LatLng kUser = const LatLng(-24.787569, -65.408084);
 
 List<LatLng> kPolilinePoints = [
   const LatLng(-24.783938, -65.407677),
