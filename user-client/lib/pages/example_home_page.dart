@@ -72,7 +72,7 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
                   child: TrackingMapComponent(
                     initialCenter: kDefaultInitPoint,
                     // currentPosition: kDefaultInitPoint,
-                    nearDistanceInKm: 0.1,
+                    nearDistanceInKm: 0.20,
                     // trackingCurrentPosition: ,
                     // packagePosition: ,
                     onTrackingStart: _onTrackingStart,

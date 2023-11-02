@@ -14,7 +14,7 @@ void main(List<String> args) {
 
     client.on('updateLocationDelivery', (data) {
       final location = Latlng.fromJson(data);
-      log("${location.lat}, ${location.lng}");
+      log("lat: ${location.lat}, lng:${location.lng}");
 
       io.to('deliveryRoom').emit('updateLocationUser', location.toJson());
     });

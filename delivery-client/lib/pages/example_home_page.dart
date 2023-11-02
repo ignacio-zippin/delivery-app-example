@@ -19,7 +19,7 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.amber,
+          backgroundColor: Colors.blueAccent,
           foregroundColor: Colors.black,
           title: const Text("Maps Plugin Test"),
         ),
@@ -37,41 +37,11 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: isEnabled
-                      ? () {
-                          //
-                        }
-                      : () {},
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStatePropertyAll<Color>(
-                      isEnabled ? Colors.amber : Colors.amber[100]!,
-                    ),
-                    maximumSize: const MaterialStatePropertyAll<Size>(
-                      Size(double.infinity, 100),
-                    ),
-                    minimumSize: const MaterialStatePropertyAll<Size>(
-                      Size(100, 40),
-                    ),
-                    shape: MaterialStatePropertyAll<OutlinedBorder>(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    buttonText,
-                    style: TextStyle(
-                      color: isEnabled ? Colors.black : Colors.grey,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
                 Expanded(
                   child: TrackingMapComponent(
                     initialCenter: kDefaultInitPoint,
                     packagePosition: kSiltium,
-                    nearDistanceInKm: 0.1,
+                    nearDistanceInKm: 0.25,
                     onTrackingStart: _onTrackingStart,
                     onTrackingGetPackage: _onTrackingGetPackage,
                     onTrackingNear: _onTrackingNear,

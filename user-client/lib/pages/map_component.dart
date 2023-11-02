@@ -186,7 +186,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
             bottom: 10,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.yellow,
+                color: Colors.amber,
                 borderRadius: BorderRadius.circular(1000),
                 border: Border.all(color: Colors.black),
               ),

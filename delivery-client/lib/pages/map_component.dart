@@ -49,7 +49,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   late MapController mapController;
   LocationSettings locationSettings = const LocationSettings(
     accuracy: LocationAccuracy.high,
-    distanceFilter: 0,
+    distanceFilter: 10,
   );
   LatLng currentPosition = kOther;
   LatLng redPosition = kOther;
@@ -78,7 +78,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   }
 
   initTracking() {
-    widget.onTrackingStart?.call();
+    // widget.onTrackingStart?.call();
     debugPrint("Comenzó tracking");
     // getLocationStream();
   }
@@ -174,7 +174,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
             bottom: 10,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.yellow,
+                color: Colors.blueAccent,
                 borderRadius: BorderRadius.circular(1000),
                 border: Border.all(color: Colors.black),
               ),
@@ -296,7 +296,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
     );
     if (totalDistance <= widget.nearDistanceInKm && !isNear) {
       isNear = true;
-      widget.onTrackingNear?.call();
+      // widget.onTrackingNear?.call();
       debugPrint("${totalDistance.toString()} Km.");
       debugPrint("Tracking esta cerca");
     }
@@ -354,7 +354,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
       } else if (redPosition.longitude < currentPosition.longitude) {
         _addLongitude();
       } else {
-        widget.onTrackingArrive?.call();
+        // widget.onTrackingArrive?.call();
         debugPrint("Tracking llegó");
         timer.cancel();
       }
