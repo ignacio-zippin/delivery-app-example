@@ -42,10 +42,10 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
                     initialCenter: kDefaultInitPoint,
                     packagePosition: kSiltium,
                     nearDistanceInKm: 0.25,
-                    onTrackingStart: _onTrackingStart,
+                    /* onTrackingStart: _onTrackingStart,
                     onTrackingGetPackage: _onTrackingGetPackage,
                     onTrackingNear: _onTrackingNear,
-                    onTrackingArrive: _onTrackingArrive,
+                    onTrackingArrive: _onTrackingArrive, */
                   ),
                 ),
               ],
@@ -54,30 +54,5 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
         ),
       ),
     );
-  }
-
-  _onTrackingStart() {
-    Fluttertoast.showToast(msg: "El repartidor ya está en camino!");
-  }
-
-  _onTrackingGetPackage() {
-    Fluttertoast.showToast(msg: "El repartidor ya retiró tu paquete!");
-    setState(() {
-      buttonText = "Tracking tiene el paquete";
-    });
-  }
-
-  _onTrackingNear() {
-    Fluttertoast.showToast(msg: "El repartidor está cerca!");
-    setState(() {
-      buttonText = "Tracking esta cerca";
-    });
-  }
-
-  _onTrackingArrive() {
-    Fluttertoast.showToast(msg: "El repartidor ya llegó con tu paquete!");
-    setState(() {
-      buttonText = "Tracking llegó";
-    });
   }
 }
