@@ -9,19 +9,19 @@ class PermissionManager {
 
   PermissionManager._constructor();
 
-  // Future<bool> getPermissionForLocation() async {
-  //   return await _getPermission(Permission.locationWhenInUse);
-  // }
+  Future<bool> getPermissionForLocation() async {
+    return await _getPermission(Permission.locationWhenInUse);
+  }
 
   Future<bool> getLocationServiceStatus() async {
     return await Permission.locationWhenInUse.isGranted;
   }
 
-  // Future<bool> _getPermission(Permission permission) async {
-  //   bool hasPermission = await permission.isGranted;
-  //   if (!hasPermission) {
-  //     hasPermission = await permission.request().isGranted;
-  //   }
-  //   return hasPermission;
-  // }
+  Future<bool> _getPermission(Permission permission) async {
+    bool hasPermission = await permission.isGranted;
+    if (!hasPermission) {
+      hasPermission = await permission.request().isGranted;
+    }
+    return hasPermission;
+  }
 }

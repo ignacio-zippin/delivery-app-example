@@ -9,8 +9,9 @@ import 'package:flutter_yama_plugins/pages/permission_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:location/location.dart';
 import 'package:s_sockets/s_sockets.dart';
-// import 'package:flutter_yama_plugins/pages/maps/permission_manager.dart';
+// import 'package:flutter_yama_plugins/pages/permission_manager.dart';
 
 // ignore: must_be_immutable
 class TrackingMapComponent extends StatefulWidget {
@@ -48,8 +49,8 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   StreamSubscription<Position>? positionStream;
   late MapController mapController;
   LocationSettings locationSettings = const LocationSettings(
-    accuracy: LocationAccuracy.high,
-    distanceFilter: 10,
+    // accuracy: LocationAccuracy.best,
+    distanceFilter: 0,
   );
   LatLng currentPosition = kOther;
   LatLng redPosition = kOther;
@@ -61,6 +62,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   void initState() {
     loadingPosition = widget.isLoading;
     mapController = MapController();
+    locationInit();
     initTracking();
     super.initState();
   }
@@ -234,32 +236,32 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   void getPosition() async {
     bool response = await PermissionManager().getLocationServiceStatus();
     if (response) {
-      positionStream =
-          Geolocator.getPositionStream(locationSettings: locationSettings)
-              .listen(
-        (Position? position) {
-          if (position != null) {
-            setState(
-              () {
-                currentPosition = LatLng(position.latitude, position.longitude);
-                widget.initialCenter =
-                    _getCenterPoint(widget.packagePosition, currentPosition);
-              },
-            );
-            // Preguntas del usuario
-            _hasPackage();
-            _distance();
-            //TODO: LLamada a Socket
-            SSockets().emit(
-              'updateLocationDelivery',
-              '{"lat": ${currentPosition.latitude}, "lng": ${currentPosition.longitude}}',
-            );
-          }
-        },
-        onError: (e) {
-          positionStream?.cancel();
-        },
-      );
+      positionStream = getLocationStreamPackageLocation();
+
+      // Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+      //   (Position? position) {
+      //     if (position != null) {
+      //       setState(
+      //         () {
+      //           currentPosition = LatLng(position.latitude, position.longitude);
+      //           widget.initialCenter =
+      //               _getCenterPoint(widget.packagePosition, currentPosition);
+      //         },
+      //       );
+      //       // Preguntas del usuario
+      //       _hasPackage();
+      //       _distance();
+      //       //TODO: LLamada a Socket
+      //       SSockets().emit(
+      //         'updateLocationDelivery',
+      //         '{"lat": ${currentPosition.latitude}, "lng": ${currentPosition.longitude}}',
+      //       );
+      //     }
+      //   },
+      //   onError: (e) {
+      //     positionStream?.cancel();
+      //   },
+      // );
     }
   }
 
@@ -398,49 +400,52 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
       );
     });
   }
-}
 
 // LOCATION PACKAGE
-// Alternativa a Geolocator
+//Alternativa a Geolocator
 
-// import 'package:location/location.dart';
+  Location location = Location();
 
-// Location location = Location();
+  locationInit() async {
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+    // ignore: unused_local_variable
+    LocationData locationData;
 
-// locationInit() async {
-//   bool serviceEnabled;
-//   PermissionStatus permissionGranted;
-//   // ignore: unused_local_variable
-//   LocationData locationData;
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        return;
+      }
+    }
 
-//   serviceEnabled = await location.serviceEnabled();
-//   if (!serviceEnabled) {
-//     serviceEnabled = await location.requestService();
-//     if (!serviceEnabled) {
-//       return;
-//     }
-//   }
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
 
-//   permissionGranted = await location.hasPermission();
-//   if (permissionGranted == PermissionStatus.denied) {
-//     permissionGranted = await location.requestPermission();
-//     if (permissionGranted != PermissionStatus.granted) {
-//       return;
-//     }
-//   }
+    locationData = await location.getLocation();
+  }
 
-//   locationData = await location.getLocation();
-// }
-
-// getLocationStream() {
-//   location.onLocationChanged.listen((LocationData currentLocation) {
-//     if (currentLocation.latitude != null && currentLocation.longitude != null) {
-//       setState(() {
-//         redPosition = LatLng(
-//           currentLocation.latitude!,
-//           currentLocation.longitude!,
-//         );
-//       });
-//     }
-//   });
-// }
+  getLocationStreamPackageLocation() {
+    location.onLocationChanged.listen((LocationData currentLocation) {
+      if (currentLocation.latitude != null &&
+          currentLocation.longitude != null) {
+        setState(() {
+          currentPosition = LatLng(
+            currentLocation.latitude!,
+            currentLocation.longitude!,
+          );
+        });
+        SSockets().emit(
+          'updateLocationDelivery',
+          '{"lat": ${currentLocation.latitude}, "lng": ${currentLocation.longitude}}',
+        );
+      }
+    });
+  }
+}

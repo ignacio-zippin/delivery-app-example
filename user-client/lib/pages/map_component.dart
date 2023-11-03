@@ -54,7 +54,7 @@ class _TrackingMapComponentState extends State<TrackingMapComponent> {
   StreamSubscription<Position>? positionStream;
   late MapController mapController;
   LocationSettings locationSettings = const LocationSettings(
-    accuracy: LocationAccuracy.high,
+    accuracy: LocationAccuracy.best,
     distanceFilter: 0,
   );
   LatLng myCurrentPosition = kDefaultInitPoint;
